@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { usePresets } from "@/lib/presets-context";
 import {
   Dialog,
@@ -13,7 +13,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Settings2, X, Plus } from "lucide-react";
+import { Settings2, X, Plus, Download, Upload, RotateCcw } from "lucide-react";
+import { toast } from "sonner";
 
 export function PresetsDialog() {
   const {
@@ -21,7 +22,10 @@ export function PresetsDialog() {
     addTag, removeTag, addOwner, removeOwner,
     addProfileImage, removeProfileImage,
     addUrlIndex, removeUrlIndex,
+    exportPresets, importPresets, resetPresets,
   } = usePresets();
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [newTag, setNewTag] = useState("");
   const [newOwner, setNewOwner] = useState("");
@@ -220,6 +224,72 @@ export function PresetsDialog() {
             </div>
           </TabsContent>
         </Tabs>
+
+        <div className="flex items-center gap-2 pt-3 border-t border-border">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-xs gap-1.5"
+            onClick={() => {
+              const blob = new Blob([exportPresets()], { type: "application/json" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = "presets.json";
+              a.click();
+              URL.revokeObjectURL(url);
+              toast.success("Presets exported");
+            }}
+          >
+            <Download className="w-3 h-3" />
+            Export
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-xs gap-1.5"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Upload className="w-3 h-3" />
+            Import
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              const reader = new FileReader();
+              reader.onload = () => {
+                try {
+                  importPresets(reader.result as string);
+                  toast.success("Presets imported");
+                } catch {
+                  toast.error("Invalid presets file");
+                }
+              };
+              reader.readAsText(file);
+              e.target.value = "";
+            }}
+          />
+          <div className="flex-1" />
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs gap-1.5 text-destructive hover:text-destructive"
+            onClick={() => {
+              if (window.confirm("Reset all presets to defaults?")) {
+                resetPresets();
+                toast.success("Presets reset to defaults");
+              }
+            }}
+          >
+            <RotateCcw className="w-3 h-3" />
+            Reset
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );

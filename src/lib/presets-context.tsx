@@ -5,6 +5,8 @@ import {
   useContext,
   useState,
   useCallback,
+  useEffect,
+  useRef,
   ReactNode,
 } from "react";
 
@@ -27,6 +29,9 @@ export interface PresetsContextType {
   addUrlIndex: (index: number, label: string) => void;
   removeUrlIndex: (index: number) => void;
   getUrlLabel: (index: number) => string;
+  exportPresets: () => string;
+  importPresets: (json: string) => void;
+  resetPresets: () => void;
 }
 
 const DEFAULT_PROFILE_IMAGES = [
@@ -53,14 +58,44 @@ const DEFAULT_URL_INDEXES: UrlIndexEntry[] = [
 
 const PresetsContext = createContext<PresetsContextType | null>(null);
 
+const STORAGE_KEY = "owce-presets";
+
+const DEFAULT_TAGS = [
+  "DeepSeek", "OpenAI", "Anthropic", "Google", "MoE",
+  "Reasoning", "Vision", "Aliyun",
+];
+const DEFAULT_OWNERS = ["openai"];
+
+interface StoredPresets {
+  tags: string[];
+  owners: string[];
+  profileImages: { label: string; url: string }[];
+  urlIndexes: UrlIndexEntry[];
+}
+
+function loadFromStorage(): StoredPresets | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as StoredPresets;
+  } catch {
+    return null;
+  }
+}
+
 export function PresetsProvider({ children }: { children: ReactNode }) {
-  const [tags, setTags] = useState<string[]>([
-    "DeepSeek", "OpenAI", "Anthropic", "Google", "MoE",
-    "Reasoning", "Vision", "Aliyun",
-  ]);
-  const [owners, setOwners] = useState<string[]>(["openai"]);
-  const [profileImages, setProfileImages] = useState(DEFAULT_PROFILE_IMAGES);
-  const [urlIndexes, setUrlIndexes] = useState<UrlIndexEntry[]>(DEFAULT_URL_INDEXES);
+  const stored = useRef(loadFromStorage());
+  const [tags, setTags] = useState<string[]>(stored.current?.tags ?? DEFAULT_TAGS);
+  const [owners, setOwners] = useState<string[]>(stored.current?.owners ?? DEFAULT_OWNERS);
+  const [profileImages, setProfileImages] = useState(stored.current?.profileImages ?? DEFAULT_PROFILE_IMAGES);
+  const [urlIndexes, setUrlIndexes] = useState<UrlIndexEntry[]>(stored.current?.urlIndexes ?? DEFAULT_URL_INDEXES);
+
+  // Persist to localStorage on change
+  useEffect(() => {
+    const data: StoredPresets = { tags, owners, profileImages, urlIndexes };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }, [tags, owners, profileImages, urlIndexes]);
 
   const addTag = useCallback((tag: string) => {
     setTags((p) => (p.includes(tag) ? p : [...p, tag]));
@@ -101,6 +136,26 @@ export function PresetsProvider({ children }: { children: ReactNode }) {
     [urlIndexes]
   );
 
+  const exportPresets = useCallback(() => {
+    return JSON.stringify({ tags, owners, profileImages, urlIndexes }, null, 2);
+  }, [tags, owners, profileImages, urlIndexes]);
+
+  const importPresets = useCallback((json: string) => {
+    const data = JSON.parse(json) as StoredPresets;
+    if (data.tags) setTags(data.tags);
+    if (data.owners) setOwners(data.owners);
+    if (data.profileImages) setProfileImages(data.profileImages);
+    if (data.urlIndexes) setUrlIndexes(data.urlIndexes);
+  }, []);
+
+  const resetPresets = useCallback(() => {
+    setTags(DEFAULT_TAGS);
+    setOwners(DEFAULT_OWNERS);
+    setProfileImages(DEFAULT_PROFILE_IMAGES);
+    setUrlIndexes(DEFAULT_URL_INDEXES);
+    localStorage.removeItem(STORAGE_KEY);
+  }, []);
+
   return (
     <PresetsContext.Provider
       value={{
@@ -108,6 +163,7 @@ export function PresetsProvider({ children }: { children: ReactNode }) {
         addTag, removeTag, addOwner, removeOwner,
         addProfileImage, removeProfileImage,
         addUrlIndex, removeUrlIndex, getUrlLabel,
+        exportPresets, importPresets, resetPresets,
       }}
     >
       {children}
