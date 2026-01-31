@@ -17,21 +17,18 @@ import { Settings2, X, Plus } from "lucide-react";
 
 export function PresetsDialog() {
   const {
-    tags,
-    owners,
-    profileImages,
-    addTag,
-    removeTag,
-    addOwner,
-    removeOwner,
-    addProfileImage,
-    removeProfileImage,
+    tags, owners, profileImages, urlIndexes,
+    addTag, removeTag, addOwner, removeOwner,
+    addProfileImage, removeProfileImage,
+    addUrlIndex, removeUrlIndex,
   } = usePresets();
 
   const [newTag, setNewTag] = useState("");
   const [newOwner, setNewOwner] = useState("");
   const [newImgLabel, setNewImgLabel] = useState("");
   const [newImgUrl, setNewImgUrl] = useState("");
+  const [newUrlIdx, setNewUrlIdx] = useState("");
+  const [newUrlLabel, setNewUrlLabel] = useState("");
 
   return (
     <Dialog>
@@ -51,33 +48,88 @@ export function PresetsDialog() {
             Manage Presets
           </DialogTitle>
         </DialogHeader>
-        <Tabs defaultValue="tags">
+        <Tabs defaultValue="urls">
           <TabsList className="h-8 bg-muted/30 w-full">
+            <TabsTrigger value="urls" className="text-xs flex-1">
+              URL Indexes
+            </TabsTrigger>
             <TabsTrigger value="tags" className="text-xs flex-1">
               Tags
+            </TabsTrigger>
+            <TabsTrigger value="images" className="text-xs flex-1">
+              Images
             </TabsTrigger>
             <TabsTrigger value="owners" className="text-xs flex-1">
               Owners
             </TabsTrigger>
-            <TabsTrigger value="images" className="text-xs flex-1">
-              Profile Images
-            </TabsTrigger>
           </TabsList>
+
+          {/* URL Indexes */}
+          <TabsContent value="urls" className="mt-3 space-y-3">
+            <div className="space-y-1.5">
+              {urlIndexes.map((u) => (
+                <div
+                  key={u.index}
+                  className="flex items-center gap-2 px-2 py-1.5 rounded border border-border bg-muted/20 group"
+                >
+                  <Badge variant="outline" className="text-[10px] h-5 px-1.5 font-mono shrink-0">
+                    #{u.index}
+                  </Badge>
+                  <span className="text-xs flex-1">{u.label}</span>
+                  <button
+                    onClick={() => removeUrlIndex(u.index)}
+                    className="opacity-0 group-hover:opacity-100 hover:text-destructive transition-all"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <Input
+                type="number"
+                value={newUrlIdx}
+                onChange={(e) => setNewUrlIdx(e.target.value)}
+                placeholder="#"
+                className="h-8 text-xs bg-input/50 w-16"
+              />
+              <Input
+                value={newUrlLabel}
+                onChange={(e) => setNewUrlLabel(e.target.value)}
+                placeholder="Label (e.g. Aliyun API)"
+                className="h-8 text-xs bg-input/50 flex-1"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && newUrlIdx && newUrlLabel.trim()) {
+                    addUrlIndex(parseInt(newUrlIdx), newUrlLabel.trim());
+                    setNewUrlIdx("");
+                    setNewUrlLabel("");
+                  }
+                }}
+              />
+              <Button
+                size="sm"
+                variant="secondary"
+                className="h-8 text-xs gap-1"
+                onClick={() => {
+                  if (newUrlIdx && newUrlLabel.trim()) {
+                    addUrlIndex(parseInt(newUrlIdx), newUrlLabel.trim());
+                    setNewUrlIdx("");
+                    setNewUrlLabel("");
+                  }
+                }}
+              >
+                <Plus className="w-3 h-3" />
+              </Button>
+            </div>
+          </TabsContent>
 
           {/* Tags */}
           <TabsContent value="tags" className="mt-3 space-y-3">
             <div className="flex flex-wrap gap-1.5">
               {tags.map((tag) => (
-                <Badge
-                  key={tag}
-                  variant="secondary"
-                  className="text-xs gap-1 pr-1"
-                >
+                <Badge key={tag} variant="secondary" className="text-xs gap-1 pr-1">
                   {tag}
-                  <button
-                    onClick={() => removeTag(tag)}
-                    className="hover:text-destructive transition-colors ml-0.5"
-                  >
+                  <button onClick={() => removeTag(tag)} className="hover:text-destructive transition-colors ml-0.5">
                     <X className="w-3 h-3" />
                   </button>
                 </Badge>
@@ -89,44 +141,25 @@ export function PresetsDialog() {
                 onChange={(e) => setNewTag(e.target.value)}
                 placeholder="New tag..."
                 className="h-8 text-xs bg-input/50"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && newTag.trim()) {
-                    addTag(newTag.trim());
-                    setNewTag("");
-                  }
-                }}
+                onKeyDown={(e) => { if (e.key === "Enter" && newTag.trim()) { addTag(newTag.trim()); setNewTag(""); } }}
               />
-              <Button
-                size="sm"
-                variant="secondary"
-                className="h-8 text-xs gap-1"
-                onClick={() => {
-                  if (newTag.trim()) {
-                    addTag(newTag.trim());
-                    setNewTag("");
-                  }
-                }}
-              >
-                <Plus className="w-3 h-3" />
-                Add
+              <Button size="sm" variant="secondary" className="h-8 text-xs gap-1"
+                onClick={() => { if (newTag.trim()) { addTag(newTag.trim()); setNewTag(""); } }}>
+                <Plus className="w-3 h-3" /> Add
               </Button>
             </div>
           </TabsContent>
 
           {/* Owners */}
           <TabsContent value="owners" className="mt-3 space-y-3">
+            <p className="text-[10px] text-muted-foreground">
+              Open WebUI uses &quot;openai&quot; as the universal API interface. Add more if needed.
+            </p>
             <div className="flex flex-wrap gap-1.5">
               {owners.map((owner) => (
-                <Badge
-                  key={owner}
-                  variant="secondary"
-                  className="text-xs gap-1 pr-1"
-                >
+                <Badge key={owner} variant="secondary" className="text-xs gap-1 pr-1">
                   {owner}
-                  <button
-                    onClick={() => removeOwner(owner)}
-                    className="hover:text-destructive transition-colors ml-0.5"
-                  >
+                  <button onClick={() => removeOwner(owner)} className="hover:text-destructive transition-colors ml-0.5">
                     <X className="w-3 h-3" />
                   </button>
                 </Badge>
@@ -138,26 +171,11 @@ export function PresetsDialog() {
                 onChange={(e) => setNewOwner(e.target.value)}
                 placeholder="New owner..."
                 className="h-8 text-xs bg-input/50"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && newOwner.trim()) {
-                    addOwner(newOwner.trim());
-                    setNewOwner("");
-                  }
-                }}
+                onKeyDown={(e) => { if (e.key === "Enter" && newOwner.trim()) { addOwner(newOwner.trim()); setNewOwner(""); } }}
               />
-              <Button
-                size="sm"
-                variant="secondary"
-                className="h-8 text-xs gap-1"
-                onClick={() => {
-                  if (newOwner.trim()) {
-                    addOwner(newOwner.trim());
-                    setNewOwner("");
-                  }
-                }}
-              >
-                <Plus className="w-3 h-3" />
-                Add
+              <Button size="sm" variant="secondary" className="h-8 text-xs gap-1"
+                onClick={() => { if (newOwner.trim()) { addOwner(newOwner.trim()); setNewOwner(""); } }}>
+                <Plus className="w-3 h-3" /> Add
               </Button>
             </div>
           </TabsContent>
@@ -166,23 +184,12 @@ export function PresetsDialog() {
           <TabsContent value="images" className="mt-3 space-y-3">
             <div className="grid grid-cols-2 gap-2">
               {profileImages.map((img) => (
-                <div
-                  key={img.url}
-                  className="flex items-center gap-2 px-2 py-1.5 rounded border border-border bg-muted/20 group"
-                >
-                  <img
-                    src={img.url}
-                    alt={img.label}
-                    className="w-6 h-6 rounded object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = "none";
-                    }}
-                  />
+                <div key={img.url} className="flex items-center gap-2 px-2 py-1.5 rounded border border-border bg-muted/20 group">
+                  <img src={img.url} alt={img.label} className="w-6 h-6 rounded object-cover"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
                   <span className="text-xs flex-1 truncate">{img.label}</span>
-                  <button
-                    onClick={() => removeProfileImage(img.url)}
-                    className="opacity-0 group-hover:opacity-100 hover:text-destructive transition-all"
-                  >
+                  <button onClick={() => removeProfileImage(img.url)}
+                    className="opacity-0 group-hover:opacity-100 hover:text-destructive transition-all">
                     <X className="w-3 h-3" />
                   </button>
                 </div>
@@ -190,40 +197,25 @@ export function PresetsDialog() {
             </div>
             <div className="space-y-2">
               <div className="flex gap-2">
-                <Input
-                  value={newImgLabel}
-                  onChange={(e) => setNewImgLabel(e.target.value)}
-                  placeholder="Label (e.g. OpenAI)"
-                  className="h-8 text-xs bg-input/50 w-32"
-                />
-                <Input
-                  value={newImgUrl}
-                  onChange={(e) => setNewImgUrl(e.target.value)}
-                  placeholder="Image URL..."
-                  className="h-8 text-xs bg-input/50 flex-1"
+                <Input value={newImgLabel} onChange={(e) => setNewImgLabel(e.target.value)}
+                  placeholder="Label" className="h-8 text-xs bg-input/50 w-32" />
+                <Input value={newImgUrl} onChange={(e) => setNewImgUrl(e.target.value)}
+                  placeholder="Image URL..." className="h-8 text-xs bg-input/50 flex-1"
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && newImgLabel.trim() && newImgUrl.trim()) {
                       addProfileImage(newImgLabel.trim(), newImgUrl.trim());
-                      setNewImgLabel("");
-                      setNewImgUrl("");
+                      setNewImgLabel(""); setNewImgUrl("");
                     }
-                  }}
-                />
+                  }} />
               </div>
-              <Button
-                size="sm"
-                variant="secondary"
-                className="h-8 text-xs gap-1 w-full"
+              <Button size="sm" variant="secondary" className="h-8 text-xs gap-1 w-full"
                 onClick={() => {
                   if (newImgLabel.trim() && newImgUrl.trim()) {
                     addProfileImage(newImgLabel.trim(), newImgUrl.trim());
-                    setNewImgLabel("");
-                    setNewImgUrl("");
+                    setNewImgLabel(""); setNewImgUrl("");
                   }
-                }}
-              >
-                <Plus className="w-3 h-3" />
-                Add Image
+                }}>
+                <Plus className="w-3 h-3" /> Add Image
               </Button>
             </div>
           </TabsContent>

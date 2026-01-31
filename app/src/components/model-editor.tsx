@@ -327,14 +327,32 @@ export function ModelEditor({ model, onUpdate }: Props) {
                 <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">
                   URL Index
                 </Label>
-                <Input
-                  type="number"
-                  value={model.urlIdx}
-                  onChange={(e) =>
-                    update({ urlIdx: parseInt(e.target.value) || 0 })
-                  }
-                  className="h-8 text-xs bg-input/50"
-                />
+                <Select
+                  value={String(model.urlIdx)}
+                  onValueChange={(v) => {
+                    const idx = parseInt(v);
+                    update({
+                      urlIdx: idx,
+                      openai: { ...model.openai, urlIdx: idx },
+                    });
+                  }}
+                >
+                  <SelectTrigger className="h-8 text-xs bg-input/50">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {presets.urlIndexes.map((u) => (
+                      <SelectItem key={u.index} value={String(u.index)}>
+                        #{u.index} — {u.label}
+                      </SelectItem>
+                    ))}
+                    {!presets.urlIndexes.some((u) => u.index === model.urlIdx) && (
+                      <SelectItem value={String(model.urlIdx)}>
+                        #{model.urlIdx} (unknown)
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1.5">
                 <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -742,20 +760,13 @@ export function ModelEditor({ model, onUpdate }: Props) {
               </div>
               <div className="space-y-1.5">
                 <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                  URL Index
+                  URL Index (synced)
                 </Label>
                 <Input
                   type="number"
-                  value={model.openai.urlIdx ?? 0}
-                  onChange={(e) =>
-                    update({
-                      openai: {
-                        ...model.openai,
-                        urlIdx: parseInt(e.target.value) || 0,
-                      },
-                    })
-                  }
-                  className="h-8 text-xs bg-input/50"
+                  value={model.openai.urlIdx ?? model.urlIdx}
+                  disabled
+                  className="h-8 text-xs bg-input/50 opacity-60"
                 />
               </div>
               <div className="space-y-1.5">

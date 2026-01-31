@@ -2,9 +2,9 @@
 
 import { useState, useMemo } from "react";
 import { ModelConfig } from "@/lib/types";
+import { usePresets } from "@/lib/presets-context";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,6 +35,7 @@ export function ModelSidebar({
   onDelete,
   onDuplicate,
 }: Props) {
+  const presets = usePresets();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "active" | "inactive">("all");
 
@@ -56,9 +57,9 @@ export function ModelSidebar({
   const inactiveCount = models.length - activeCount;
 
   return (
-    <aside className="w-72 border-r border-border bg-sidebar flex flex-col shrink-0">
+    <div className="h-full flex flex-col bg-sidebar">
       {/* Search */}
-      <div className="p-3 space-y-2 border-b border-border">
+      <div className="p-3 space-y-2 border-b border-border shrink-0">
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
           <Input
@@ -92,46 +93,82 @@ export function ModelSidebar({
         </div>
       </div>
 
-      {/* Model List */}
-      <ScrollArea className="flex-1">
+      {/* Model List - native scroll */}
+      <div className="flex-1 overflow-y-auto min-h-0">
         <div className="p-1">
           {filtered.map((model) => (
             <div
               key={model.id}
               onClick={() => onSelect(model.id)}
               className={cn(
-                "w-full text-left px-3 py-2.5 rounded-md transition-all group cursor-pointer",
+                "w-full text-left px-2 py-2 rounded-md transition-all group cursor-pointer",
                 "hover:bg-sidebar-accent",
                 selectedId === model.id
                   ? "bg-sidebar-accent border-l-2 border-primary"
                   : "border-l-2 border-transparent"
               )}
             >
-              <div className="flex items-start justify-between gap-2">
+              <div className="flex items-start gap-2">
+                {/* Profile image */}
+                <div className="shrink-0 mt-0.5">
+                  {model.meta?.profile_image_url ? (
+                    <img
+                      src={model.meta.profile_image_url}
+                      alt=""
+                      className="w-7 h-7 rounded object-cover border border-border"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = "none";
+                        (e.target as HTMLImageElement).nextElementSibling?.classList.remove("hidden");
+                      }}
+                    />
+                  ) : (
+                    <div className="w-7 h-7 rounded bg-muted/30 flex items-center justify-center">
+                      <Circle
+                        className={cn(
+                          "w-2.5 h-2.5",
+                          model.is_active
+                            ? "fill-emerald-500 text-emerald-500"
+                            : "fill-muted-foreground/30 text-muted-foreground/30"
+                        )}
+                      />
+                    </div>
+                  )}
+                </div>
+                {/* Info */}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
-                    <Circle
-                      className={cn(
-                        "w-2 h-2 shrink-0",
-                        model.is_active
-                          ? "fill-emerald-500 text-emerald-500"
-                          : "fill-muted-foreground/30 text-muted-foreground/30"
-                      )}
-                    />
-                    <span className="text-xs font-medium truncate block">
+                    {model.meta?.profile_image_url && (
+                      <Circle
+                        className={cn(
+                          "w-1.5 h-1.5 shrink-0",
+                          model.is_active
+                            ? "fill-emerald-500 text-emerald-500"
+                            : "fill-muted-foreground/30 text-muted-foreground/30"
+                        )}
+                      />
+                    )}
+                    <span className="text-xs font-medium truncate">
                       {model.name}
                     </span>
                   </div>
-                  <span className="text-[10px] text-muted-foreground truncate block mt-0.5 pl-3.5">
-                    {model.id}
-                  </span>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <Badge
+                      variant="outline"
+                      className="text-[8px] h-3.5 px-1 font-mono border-primary/30 text-primary/70"
+                    >
+                      {presets.getUrlLabel(model.urlIdx)}
+                    </Badge>
+                    <span className="text-[10px] text-muted-foreground truncate">
+                      {model.id}
+                    </span>
+                  </div>
                   {model.meta?.tags && model.meta.tags.length > 0 && (
-                    <div className="flex gap-1 mt-1 pl-3.5 flex-wrap">
+                    <div className="flex gap-1 mt-1 flex-wrap">
                       {model.meta.tags.slice(0, 3).map((t) => (
                         <Badge
                           key={t.name}
                           variant="secondary"
-                          className="text-[9px] h-4 px-1.5 bg-muted/50"
+                          className="text-[8px] h-3.5 px-1 bg-muted/50"
                         >
                           {t.name}
                         </Badge>
@@ -139,9 +176,10 @@ export function ModelSidebar({
                     </div>
                   )}
                 </div>
+                {/* Context menu */}
                 <DropdownMenu>
                   <DropdownMenuTrigger
-                    className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-muted rounded"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-muted rounded shrink-0"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <MoreVertical className="w-3.5 h-3.5 text-muted-foreground" />
@@ -177,7 +215,7 @@ export function ModelSidebar({
             </p>
           )}
         </div>
-      </ScrollArea>
-    </aside>
+      </div>
+    </div>
   );
 }
