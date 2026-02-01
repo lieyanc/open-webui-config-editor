@@ -13,14 +13,73 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Settings2, X, Plus, Download, Upload, RotateCcw } from "lucide-react";
+import { Settings2, X, Plus, Download, Upload, RotateCcw, Pencil, Check } from "lucide-react";
 import { toast } from "sonner";
+
+// Inline editable badge for tags/owners
+function EditableBadge({
+  value,
+  onUpdate,
+  onRemove,
+}: {
+  value: string;
+  onUpdate: (newValue: string) => void;
+  onRemove: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+
+  const commit = () => {
+    const trimmed = draft.trim();
+    if (trimmed && trimmed !== value) {
+      onUpdate(trimmed);
+    }
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <Badge variant="secondary" className="text-xs gap-0.5 pr-0.5 pl-1">
+        <input
+          autoFocus
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") commit();
+            if (e.key === "Escape") setEditing(false);
+          }}
+          onBlur={commit}
+          className="bg-transparent outline-none w-20 text-xs"
+        />
+        <button onClick={commit} className="hover:text-primary transition-colors">
+          <Check className="w-3 h-3" />
+        </button>
+      </Badge>
+    );
+  }
+
+  return (
+    <Badge variant="secondary" className="text-xs gap-1 pr-1 group/badge">
+      {value}
+      <button
+        onClick={() => { setDraft(value); setEditing(true); }}
+        className="opacity-0 group-hover/badge:opacity-100 hover:text-primary transition-all ml-0.5"
+      >
+        <Pencil className="w-2.5 h-2.5" />
+      </button>
+      <button onClick={onRemove} className="hover:text-destructive transition-colors ml-0.5">
+        <X className="w-3 h-3" />
+      </button>
+    </Badge>
+  );
+}
 
 export function PresetsDialog() {
   const {
     tags, owners, profileImages, urlIndexes,
-    addTag, removeTag, addOwner, removeOwner,
-    addProfileImage, removeProfileImage,
+    addTag, removeTag, updateTag,
+    addOwner, removeOwner, updateOwner,
+    addProfileImage, removeProfileImage, updateProfileImage,
     addUrlIndex, removeUrlIndex,
     exportPresets, importPresets, resetPresets,
   } = usePresets();
@@ -33,6 +92,15 @@ export function PresetsDialog() {
   const [newImgUrl, setNewImgUrl] = useState("");
   const [newUrlIdx, setNewUrlIdx] = useState("");
   const [newUrlLabel, setNewUrlLabel] = useState("");
+
+  // Inline editing state for URL indexes
+  const [editingUrlIdx, setEditingUrlIdx] = useState<number | null>(null);
+  const [editingUrlLabel, setEditingUrlLabel] = useState("");
+
+  // Inline editing state for profile images
+  const [editingImgUrl, setEditingImgUrl] = useState<string | null>(null);
+  const [editImgLabel, setEditImgLabel] = useState("");
+  const [editImgUrl, setEditImgUrl] = useState("");
 
   return (
     <Dialog>
@@ -79,13 +147,53 @@ export function PresetsDialog() {
                   <Badge variant="outline" className="text-[10px] h-5 px-1.5 font-mono shrink-0">
                     #{u.index}
                   </Badge>
-                  <span className="text-xs flex-1">{u.label}</span>
-                  <button
-                    onClick={() => removeUrlIndex(u.index)}
-                    className="opacity-0 group-hover:opacity-100 hover:text-destructive transition-all"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
+                  {editingUrlIdx === u.index ? (
+                    <>
+                      <Input
+                        autoFocus
+                        value={editingUrlLabel}
+                        onChange={(e) => setEditingUrlLabel(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && editingUrlLabel.trim()) {
+                            addUrlIndex(u.index, editingUrlLabel.trim());
+                            setEditingUrlIdx(null);
+                          }
+                          if (e.key === "Escape") setEditingUrlIdx(null);
+                        }}
+                        className="h-6 text-xs bg-input/50 flex-1"
+                      />
+                      <button
+                        onClick={() => {
+                          if (editingUrlLabel.trim()) {
+                            addUrlIndex(u.index, editingUrlLabel.trim());
+                            setEditingUrlIdx(null);
+                          }
+                        }}
+                        className="hover:text-primary transition-colors"
+                      >
+                        <Check className="w-3 h-3" />
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-xs flex-1">{u.label}</span>
+                      <button
+                        onClick={() => {
+                          setEditingUrlIdx(u.index);
+                          setEditingUrlLabel(u.label);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 hover:text-primary transition-all"
+                      >
+                        <Pencil className="w-3 h-3" />
+                      </button>
+                      <button
+                        onClick={() => removeUrlIndex(u.index)}
+                        className="opacity-0 group-hover:opacity-100 hover:text-destructive transition-all"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </>
+                  )}
                 </div>
               ))}
             </div>
@@ -131,12 +239,12 @@ export function PresetsDialog() {
           <TabsContent value="tags" className="mt-3 space-y-3">
             <div className="flex flex-wrap gap-1.5">
               {tags.map((tag) => (
-                <Badge key={tag} variant="secondary" className="text-xs gap-1 pr-1">
-                  {tag}
-                  <button onClick={() => removeTag(tag)} className="hover:text-destructive transition-colors ml-0.5">
-                    <X className="w-3 h-3" />
-                  </button>
-                </Badge>
+                <EditableBadge
+                  key={tag}
+                  value={tag}
+                  onUpdate={(v) => updateTag(tag, v)}
+                  onRemove={() => removeTag(tag)}
+                />
               ))}
             </div>
             <div className="flex gap-2">
@@ -161,12 +269,12 @@ export function PresetsDialog() {
             </p>
             <div className="flex flex-wrap gap-1.5">
               {owners.map((owner) => (
-                <Badge key={owner} variant="secondary" className="text-xs gap-1 pr-1">
-                  {owner}
-                  <button onClick={() => removeOwner(owner)} className="hover:text-destructive transition-colors ml-0.5">
-                    <X className="w-3 h-3" />
-                  </button>
-                </Badge>
+                <EditableBadge
+                  key={owner}
+                  value={owner}
+                  onUpdate={(v) => updateOwner(owner, v)}
+                  onRemove={() => removeOwner(owner)}
+                />
               ))}
             </div>
             <div className="flex gap-2">
@@ -189,13 +297,72 @@ export function PresetsDialog() {
             <div className="grid grid-cols-2 gap-2">
               {profileImages.map((img) => (
                 <div key={img.url} className="flex items-center gap-2 px-2 py-1.5 rounded border border-border bg-muted/20 group">
-                  <img src={img.url} alt={img.label} className="w-6 h-6 rounded object-cover"
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-                  <span className="text-xs flex-1 truncate">{img.label}</span>
-                  <button onClick={() => removeProfileImage(img.url)}
-                    className="opacity-0 group-hover:opacity-100 hover:text-destructive transition-all">
-                    <X className="w-3 h-3" />
-                  </button>
+                  {editingImgUrl === img.url ? (
+                    <div className="flex flex-col gap-1 w-full">
+                      <Input
+                        autoFocus
+                        value={editImgLabel}
+                        onChange={(e) => setEditImgLabel(e.target.value)}
+                        placeholder="Label"
+                        className="h-6 text-xs bg-input/50"
+                        onKeyDown={(e) => {
+                          if (e.key === "Escape") setEditingImgUrl(null);
+                        }}
+                      />
+                      <Input
+                        value={editImgUrl}
+                        onChange={(e) => setEditImgUrl(e.target.value)}
+                        placeholder="URL"
+                        className="h-6 text-xs bg-input/50"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && editImgLabel.trim() && editImgUrl.trim()) {
+                            updateProfileImage(img.url, editImgLabel.trim(), editImgUrl.trim());
+                            setEditingImgUrl(null);
+                          }
+                          if (e.key === "Escape") setEditingImgUrl(null);
+                        }}
+                      />
+                      <div className="flex justify-end gap-1">
+                        <button
+                          onClick={() => setEditingImgUrl(null)}
+                          className="text-muted-foreground hover:text-primary transition-colors"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (editImgLabel.trim() && editImgUrl.trim()) {
+                              updateProfileImage(img.url, editImgLabel.trim(), editImgUrl.trim());
+                              setEditingImgUrl(null);
+                            }
+                          }}
+                          className="text-muted-foreground hover:text-primary transition-colors"
+                        >
+                          <Check className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <img src={img.url} alt={img.label} className="w-6 h-6 rounded object-cover shrink-0"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                      <span className="text-xs flex-1 truncate">{img.label}</span>
+                      <button
+                        onClick={() => {
+                          setEditingImgUrl(img.url);
+                          setEditImgLabel(img.label);
+                          setEditImgUrl(img.url);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 hover:text-primary transition-all"
+                      >
+                        <Pencil className="w-3 h-3" />
+                      </button>
+                      <button onClick={() => removeProfileImage(img.url)}
+                        className="opacity-0 group-hover:opacity-100 hover:text-destructive transition-all">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </>
+                  )}
                 </div>
               ))}
             </div>
