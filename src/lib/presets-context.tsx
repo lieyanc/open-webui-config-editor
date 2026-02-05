@@ -46,6 +46,7 @@ const DEFAULT_PROFILE_IMAGES = [
   { label: "Z-AI GLM", url: "https://static.lieyan.work/img/ai-icon/z-ai_glm4.5.svg" },
   { label: "Moonshot Kimi", url: "https://static.lieyan.work/img/ai-icon/moonshotai_new.png" },
   { label: "xAI Grok", url: "https://static.lieyan.work/img/ai-icon/grok-black-padded.svg" },
+  { label: "Minimax", url: "https://static.lieyan.work/img/ai-icon/minimax.svg" },
 ];
 
 const DEFAULT_URL_INDEXES: UrlIndexEntry[] = [
