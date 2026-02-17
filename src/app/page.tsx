@@ -55,6 +55,7 @@ function normalizeModel(m: Partial<ModelConfig>): ModelConfig {
       profile_image_url: m.meta?.profile_image_url ?? "",
       description: m.meta?.description ?? null,
       capabilities: m.meta?.capabilities ?? {},
+      builtinTools: m.meta?.builtinTools,
       suggestion_prompts: m.meta?.suggestion_prompts ?? null,
       tags: m.meta?.tags ?? [],
     },

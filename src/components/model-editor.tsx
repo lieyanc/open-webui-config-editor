@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { ModelConfig, ModelCapabilities, AccessControl } from "@/lib/types";
+import { ModelConfig, ModelCapabilities, BuiltinTools, AccessControl } from "@/lib/types";
 import { usePresets } from "@/lib/presets-context";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -41,6 +41,14 @@ import {
   Tag,
   Braces,
   ChevronDown,
+  FileInput,
+  Wrench,
+  Clock,
+  Brain,
+  MessageSquare,
+  StickyNote,
+  BookOpen,
+  Hash,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -55,12 +63,29 @@ const CAPABILITY_META: Record<
 > = {
   vision: { label: "Vision", icon: Eye },
   file_upload: { label: "File Upload", icon: Upload },
+  file_context: { label: "File Context", icon: FileInput },
   web_search: { label: "Web Search", icon: Globe },
   image_generation: { label: "Image Gen", icon: ImageIcon },
   code_interpreter: { label: "Code Interpreter", icon: Code },
   citations: { label: "Citations", icon: Quote },
   status_updates: { label: "Status Updates", icon: Activity },
   usage: { label: "Usage Tracking", icon: BarChart3 },
+  builtin_tools: { label: "Built-in Tools", icon: Wrench },
+};
+
+const BUILTIN_TOOL_META: Record<
+  keyof BuiltinTools,
+  { label: string; icon: React.ElementType; description: string }
+> = {
+  time: { label: "Time", icon: Clock, description: "Current time & date calculation" },
+  memory: { label: "Memory", icon: Brain, description: "Memory management" },
+  chats: { label: "Chats", icon: MessageSquare, description: "Chat history retrieval" },
+  notes: { label: "Notes", icon: StickyNote, description: "Notes management" },
+  knowledge: { label: "Knowledge", icon: BookOpen, description: "Knowledge base query" },
+  channels: { label: "Channels", icon: Hash, description: "Channel & message retrieval" },
+  web_search: { label: "Web Search", icon: Globe, description: "Web search & URL fetch" },
+  image_generation: { label: "Image Gen", icon: ImageIcon, description: "Image generation & editing" },
+  code_interpreter: { label: "Code Exec", icon: Code, description: "Code execution" },
 };
 
 function SectionHeader({
@@ -113,6 +138,15 @@ export function ModelEditor({ model, onUpdate }: Props) {
     (key: keyof ModelCapabilities, value: boolean) => {
       updateMeta({
         capabilities: { ...model.meta.capabilities, [key]: value },
+      });
+    },
+    [model, updateMeta]
+  );
+
+  const updateBuiltinTool = useCallback(
+    (key: keyof BuiltinTools, value: boolean) => {
+      updateMeta({
+        builtinTools: { ...model.meta.builtinTools, [key]: value },
       });
     },
     [model, updateMeta]
@@ -493,6 +527,42 @@ export function ModelEditor({ model, onUpdate }: Props) {
               })}
             </div>
           </section>
+
+          {/* Built-in Tools */}
+          {model.meta.capabilities?.builtin_tools && (
+            <section>
+              <SectionHeader icon={Wrench} title="Built-in Tools" />
+              <p className="text-[10px] text-muted-foreground mb-3">
+                Tools auto-injected in native function calling mode when &quot;Built-in Tools&quot; capability is enabled.
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {(
+                  Object.entries(BUILTIN_TOOL_META) as [
+                    keyof BuiltinTools,
+                    (typeof BUILTIN_TOOL_META)[keyof BuiltinTools]
+                  ][]
+                ).map(([key, { label, icon: Icon, description }]) => {
+                  const enabled = model.meta.builtinTools?.[key] ?? true;
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => updateBuiltinTool(key, !enabled)}
+                      title={description}
+                      className={cn(
+                        "flex items-center gap-2 px-3 py-2 rounded-md border text-xs transition-all",
+                        enabled
+                          ? "border-primary/40 bg-primary/10 text-primary"
+                          : "border-border bg-muted/20 text-muted-foreground hover:border-muted-foreground/30"
+                      )}
+                    >
+                      <Icon className="w-3.5 h-3.5" />
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          )}
 
           {/* Tags */}
           <section>

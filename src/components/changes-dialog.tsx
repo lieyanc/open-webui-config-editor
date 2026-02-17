@@ -77,6 +77,7 @@ function diffModel(
   check("meta.description", original.meta?.description, current.meta?.description);
   check("meta.profile_image_url", original.meta?.profile_image_url, current.meta?.profile_image_url);
   check("meta.capabilities", original.meta?.capabilities, current.meta?.capabilities);
+  check("meta.builtinTools", original.meta?.builtinTools, current.meta?.builtinTools);
   check("meta.tags", original.meta?.tags, current.meta?.tags);
   check("access_control", original.access_control, current.access_control);
   check("openai", original.openai, current.openai);
