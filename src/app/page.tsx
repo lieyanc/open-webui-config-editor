@@ -16,6 +16,9 @@ import {
   Terminal,
   Undo2,
   FileDiff,
+  Github,
+  GitCommitHorizontal,
+  CalendarDays,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -120,6 +123,16 @@ export default function Home() {
   const isResizingRef = useRef(false);
 
   const selectedModel = models.find((m) => m.id === selectedId) ?? null;
+
+  // Warn before closing/navigating away with unsaved changes
+  useEffect(() => {
+    if (!hasUnsaved) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [hasUnsaved]);
 
   // Push to undo stack before changes
   const pushUndo = useCallback((snapshot: ModelConfig[]) => {
@@ -400,12 +413,48 @@ export default function Home() {
     <div className="h-screen flex flex-col overflow-hidden relative scanlines">
       {/* Header */}
       <header className="border-b border-border bg-card/80 backdrop-blur-sm z-10 shrink-0">
-        <div className="flex items-center justify-between px-4 h-12">
+        <div className="grid grid-cols-3 items-center px-4 h-12">
+          {/* Left: title + author + version */}
           <div className="flex items-center gap-3">
             <Terminal className="w-4 h-4 text-primary" />
             <span className="text-sm font-bold text-primary tracking-wider uppercase">
               Model Config Editor
             </span>
+            <a
+              href="https://github.com/lieyanc"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group flex items-center gap-1.5 text-muted-foreground/50 hover:text-primary transition-colors"
+            >
+              <Github className="w-3.5 h-3.5" />
+              <div className="flex flex-col items-start leading-none">
+                <span className="text-[10px] text-muted-foreground/60 group-hover:text-primary transition-colors">By</span>
+                <span className="text-[11px] text-muted-foreground/80 font-medium group-hover:text-primary transition-colors">lieyanc</span>
+              </div>
+            </a>
+            <span className="text-[11px] text-muted-foreground/50 tabular-nums flex items-center gap-2">
+              <a
+                href={process.env.NEXT_PUBLIC_REPO_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-0.5 hover:text-primary transition-colors"
+              >
+                <GitCommitHorizontal className="w-3 h-3" />
+                {process.env.NEXT_PUBLIC_GIT_HASH}
+              </a>
+              <a
+                href={`${process.env.NEXT_PUBLIC_REPO_URL}/commit/${process.env.NEXT_PUBLIC_GIT_HASH}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-0.5 hover:text-primary transition-colors"
+              >
+                <CalendarDays className="w-3 h-3" />
+                {process.env.NEXT_PUBLIC_BUILD_TIME}
+              </a>
+            </span>
+          </div>
+          {/* Center: models + unsaved */}
+          <div className="flex items-center justify-center gap-3">
             {models.length > 0 && (
               <span className="text-xs text-muted-foreground tabular-nums">
                 [{models.length} models]
@@ -413,14 +462,15 @@ export default function Home() {
             )}
             {hasUnsaved && (
               <ChangesDialog models={models} rawModels={rawModelsRef.current} onExportModified={handleExportModified}>
-                <button className="text-xs text-amber-muted animate-pulse hover:text-primary transition-colors flex items-center gap-1">
+                <button className="text-xs text-amber-muted animate-pulse hover:text-primary transition-colors flex items-center gap-1 border border-amber-muted/30 rounded px-1.5 py-0.5">
                   <FileDiff className="w-3 h-3" />
                   * unsaved
                 </button>
               </ChangesDialog>
             )}
           </div>
-          <div className="flex items-center gap-1">
+          {/* Right: actions */}
+          <div className="flex items-center justify-end gap-1">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
