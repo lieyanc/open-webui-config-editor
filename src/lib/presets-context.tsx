@@ -6,7 +6,6 @@ import {
   useState,
   useCallback,
   useEffect,
-  useRef,
   ReactNode,
 } from "react";
 
@@ -84,11 +83,10 @@ function loadFromStorage(): StoredPresets | null {
 }
 
 export function PresetsProvider({ children }: { children: ReactNode }) {
-  const stored = useRef(loadFromStorage());
-  const [tags, setTags] = useState<string[]>(stored.current?.tags ?? DEFAULT_TAGS);
-  const [owners, setOwners] = useState<string[]>(stored.current?.owners ?? DEFAULT_OWNERS);
-  const [profileImages, setProfileImages] = useState(stored.current?.profileImages ?? DEFAULT_PROFILE_IMAGES);
-  const [urlIndexes, setUrlIndexes] = useState<UrlIndexEntry[]>(stored.current?.urlIndexes ?? DEFAULT_URL_INDEXES);
+  const [tags, setTags] = useState<string[]>(() => loadFromStorage()?.tags ?? DEFAULT_TAGS);
+  const [owners, setOwners] = useState<string[]>(() => loadFromStorage()?.owners ?? DEFAULT_OWNERS);
+  const [profileImages, setProfileImages] = useState(() => loadFromStorage()?.profileImages ?? DEFAULT_PROFILE_IMAGES);
+  const [urlIndexes, setUrlIndexes] = useState<UrlIndexEntry[]>(() => loadFromStorage()?.urlIndexes ?? DEFAULT_URL_INDEXES);
 
   // Persist to localStorage on change
   useEffect(() => {

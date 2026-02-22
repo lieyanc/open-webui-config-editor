@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { ModelConfig } from "@/lib/types";
 import {
   Dialog,
@@ -102,12 +102,14 @@ export function ChangesDialog({ models, rawModels, children, onExportModified }:
   const deletedIds = [...rawModels.keys()].filter((id) => !currentIds.has(id));
 
   // Selection state for export
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set(allChanges.map((c) => c.model.id)));
+  const [prevChangesLength, setPrevChangesLength] = useState(allChanges.length);
 
   // Reset selection when allChanges changes
-  useEffect(() => {
+  if (allChanges.length !== prevChangesLength) {
+    setPrevChangesLength(allChanges.length);
     setSelectedIds(new Set(allChanges.map((c) => c.model.id)));
-  }, [allChanges.length]);
+  }
 
   const toggleSelection = (id: string) => {
     setSelectedIds((prev) => {
