@@ -46,7 +46,7 @@ The `rawModelsRef` map stores original JSON to ensure fields not explicitly hand
 Models have these key sections:
 - Basic info: `id`, `name`, `owned_by`, `urlIdx`, `connection_type`, `is_active`
 - `meta`: `profile_image_url`, `description`, `capabilities` (10 boolean flags including `builtin_tools`), `builtinTools` (9 tool toggles), `tags`
-- `params`: `system` prompt, `temperature`, `reasoning_effort`
+- `params`: `system` prompt, `temperature`, `reasoning_effort`, `function_calling`
 - `openai`: Nested config with `id`, `name`, `urlIdx`
 - `access_control`: Optional read/write permissions with `group_ids` and `user_ids`
 

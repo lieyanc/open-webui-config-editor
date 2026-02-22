@@ -51,6 +51,7 @@ export interface ModelParams {
   system?: string;
   temperature?: number;
   reasoning_effort?: string;
+  function_calling?: string;
 }
 
 export interface OpenAIInfo {

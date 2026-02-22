@@ -710,6 +710,27 @@ export function ModelEditor({ model, onUpdate }: Props) {
                       </SelectContent>
                     </Select>
                   </div>
+                  <div className="space-y-1.5 flex items-end">
+                    <button
+                      onClick={() =>
+                        updateParams({
+                          function_calling:
+                            model.params.function_calling === "native"
+                              ? undefined
+                              : "native",
+                        })
+                      }
+                      className={cn(
+                        "flex items-center gap-2 px-3 h-8 rounded-md border text-xs transition-all w-full",
+                        model.params.function_calling === "native"
+                          ? "border-primary/40 bg-primary/10 text-primary"
+                          : "border-border bg-muted/20 text-muted-foreground hover:border-muted-foreground/30"
+                      )}
+                    >
+                      <Wrench className="w-3.5 h-3.5" />
+                      Function Calling (Native)
+                    </button>
+                  </div>
                 </div>
               </TabsContent>
               <TabsContent value="system" className="mt-3">
