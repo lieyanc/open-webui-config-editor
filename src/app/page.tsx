@@ -113,6 +113,7 @@ export default function Home() {
   const [hasUnsaved, setHasUnsaved] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [sidebarWidth, setSidebarWidth] = useState(288);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const rawModelsRef = useRef<Map<string, RawModel>>(new Map());
   const undoStackRef = useRef<ModelConfig[][]>([]);
@@ -155,31 +156,80 @@ export default function Home() {
     return () => window.removeEventListener("keydown", handler);
   }, [handleUndo]);
 
+  const loadFile = useCallback((file: File) => {
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target?.result as string);
+        const arr: RawModel[] = Array.isArray(data) ? data : [data];
+        rawModelsRef.current.clear();
+        arr.forEach((m) => rawModelsRef.current.set(m.id, m));
+        undoStackRef.current = [];
+        setModels(arr.map(normalizeModel));
+        setSelectedId(null);
+        setHasUnsaved(false);
+        toast.success(`Loaded ${arr.length} models`);
+      } catch {
+        toast.error("Invalid JSON file");
+      }
+    };
+    reader.readAsText(file);
+  }, []);
+
   const handleImport = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        try {
-          const data = JSON.parse(ev.target?.result as string);
-          const arr: RawModel[] = Array.isArray(data) ? data : [data];
-          rawModelsRef.current.clear();
-          arr.forEach((m) => rawModelsRef.current.set(m.id, m));
-          undoStackRef.current = [];
-          setModels(arr.map(normalizeModel));
-          setSelectedId(null);
-          setHasUnsaved(false);
-          toast.success(`Loaded ${arr.length} models`);
-        } catch {
-          toast.error("Invalid JSON file");
-        }
-      };
-      reader.readAsText(file);
+      loadFile(file);
       e.target.value = "";
     },
-    []
+    [loadFile]
   );
+
+  // Drag-and-drop file import
+  useEffect(() => {
+    let dragCounter = 0;
+
+    const onDragEnter = (e: DragEvent) => {
+      e.preventDefault();
+      dragCounter++;
+      if (e.dataTransfer?.types.includes("Files")) {
+        setIsDragging(true);
+      }
+    };
+    const onDragOver = (e: DragEvent) => {
+      e.preventDefault();
+    };
+    const onDragLeave = (e: DragEvent) => {
+      e.preventDefault();
+      dragCounter--;
+      if (dragCounter === 0) {
+        setIsDragging(false);
+      }
+    };
+    const onDrop = (e: DragEvent) => {
+      e.preventDefault();
+      dragCounter = 0;
+      setIsDragging(false);
+      const file = e.dataTransfer?.files[0];
+      if (file && file.name.endsWith(".json")) {
+        loadFile(file);
+      } else if (file) {
+        toast.error("Please drop a .json file");
+      }
+    };
+
+    window.addEventListener("dragenter", onDragEnter);
+    window.addEventListener("dragover", onDragOver);
+    window.addEventListener("dragleave", onDragLeave);
+    window.addEventListener("drop", onDrop);
+    return () => {
+      window.removeEventListener("dragenter", onDragEnter);
+      window.removeEventListener("dragover", onDragOver);
+      window.removeEventListener("dragleave", onDragLeave);
+      window.removeEventListener("drop", onDrop);
+    };
+  }, [loadFile]);
 
   const handleExport = useCallback(() => {
     const exportData = models.map((m) =>
@@ -465,6 +515,18 @@ export default function Home() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Drag-and-drop overlay */}
+      {isDragging && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm border-2 border-dashed border-primary pointer-events-none">
+          <div className="flex flex-col items-center gap-3 text-primary">
+            <Upload className="w-10 h-10" />
+            <span className="text-sm font-bold tracking-wider uppercase">
+              Drop JSON file to import
+            </span>
+          </div>
+        </div>
+      )}
     </div>
     </TooltipProvider>
     </PresetsProvider>
